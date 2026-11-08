@@ -11,6 +11,7 @@
 #import "DOJailbreaker.h"
 #import "DOGlobalAppearance.h"
 #import "DOActionMenuButton.h"
+#import "DOTerminalViewController.h"
 #import "DOUpdateViewController.h"
 #import "DOLogCrashViewController.h"
 #import <pthread.h>
@@ -100,6 +101,9 @@
             [self fadeToBlack:^{
                 [[DOEnvironmentManager sharedManager] rebootUserspace];
             }];
+        }],
+        [UIAction actionWithTitle:DOLocalizedString(@"Menu_Terminal_Title") image:[UIImage systemImageNamed:@"terminal" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"terminal" handler:^(__kindof UIAction * _Nonnull action) {
+            [self.navigationController pushViewController:[[DOTerminalViewController alloc] init] animated:YES];
         }],
         [UIAction actionWithTitle:DOLocalizedString(@"Menu_Credits_Title") image:[UIImage systemImageNamed:@"info.circle" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"credits" handler:^(__kindof UIAction * _Nonnull action) {
             [self.navigationController pushViewController:[[DOCreditsViewController alloc] init] animated:YES];
@@ -387,6 +391,10 @@
 {
     if ([action.identifier isEqualToString:@"respring"] || [action.identifier isEqualToString:@"reboot-userspace"]) {
         return [[DOEnvironmentManager sharedManager] isJailbroken];
+    }
+    if ([action.identifier isEqualToString:@"terminal"]) {
+        // Greyed out until the device is jailbroken and the bootstrap shell exists.
+        return [DOTerminalViewController isAvailable];
     }
     return YES;
 }
