@@ -593,12 +593,21 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
 {
     [super viewWillDisappear:animated];
     [_inputProxy resignFirstResponder];
+
+    // Leave the pty as soon as the user navigates away. UIKit sets
+    // isMovingFromParentViewController before viewWillDisappear runs for a
+    // navigation pop, so this is the reliable place to tear the shell down.
+    if (self.isMovingFromParentViewController || self.isBeingDismissed) {
+        [self stopShell];
+    }
 }
 
-- (void)viewDidDisappear:(BOOL)animated
+- (void)didMoveToParentViewController:(UIViewController *)parent
 {
-    [super viewDidDisappear:animated];
-    if (self.isMovingFromParentViewController || self.isBeingDismissed) [self stopShell];
+    [super didMoveToParentViewController:parent];
+    // Belt and braces: getting detached from the navigation stack always means
+    // the shell should go away.
+    if (parent == nil) [self stopShell];
 }
 
 - (void)dealloc
@@ -849,23 +858,39 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
         _readSource = nil;
     }
 
-    if (_childPid > 0) {
-        // Ask the shell to leave politely, then make sure it is gone.
-        pid_t pid = _childPid;
-        kill(pid, SIGHUP);
-        kill(pid, SIGTERM);
-        int status = 0;
-        for (int i = 0; i < 20; i++) {
-            pid_t r = waitpid(pid, &status, WNOHANG);
-            if (r == pid || (r < 0 && errno == ECHILD)) break;
-            usleep(50 * 1000);
-        }
-        _childPid = 0;
-    }
-
+    // Close our end of the pty first: that delivers SIGHUP to the foreground
+    // process group of the terminal, which is the normal way an interactive
+    // shell learns that its terminal went away.
     if (_masterFD >= 0) {
         close(_masterFD);
         _masterFD = -1;
+    }
+
+    if (_childPid > 0) {
+        pid_t pid = _childPid;
+        _childPid = 0;
+
+        // Give zsh a moment to exit on its own, then insist.
+        int status = 0;
+        BOOL reaped = NO;
+        for (int i = 0; i < 10; i++) {
+            pid_t r = waitpid(pid, &status, WNOHANG);
+            if (r == pid || (r < 0 && errno == ECHILD)) { reaped = YES; break; }
+            usleep(30 * 1000);
+        }
+        if (!reaped) {
+            kill(pid, SIGTERM);
+            for (int i = 0; i < 10; i++) {
+                pid_t r = waitpid(pid, &status, WNOHANG);
+                if (r == pid || (r < 0 && errno == ECHILD)) { reaped = YES; break; }
+                usleep(30 * 1000);
+            }
+        }
+        if (!reaped) {
+            // Last resort. We are the parent, so the shell is reaped later by
+            // the system; nothing else we can do from here.
+            kill(pid, SIGKILL);
+        }
     }
 }
 
