@@ -15,6 +15,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic, retain) NSString *name;
 @property (nonatomic, retain) NSString *icon;
 @property (nonatomic, retain) NSString *key;
+@property (nonatomic, retain) NSString *bootlogoOverlay;
 @property (nonatomic, retain) UIColor *actionMenuColor;
 @property (nonatomic, retain) UIColor *windowColor;
 @property (nonatomic, retain) UIImage *image;

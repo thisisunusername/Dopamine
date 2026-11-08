@@ -90,5 +90,23 @@
 		<key>titleShadow</key>
 		<false/>
 	</dict>
+	<dict>
+		<key>key</key>
+		<string>midnight</string>
+		<key>icon</key>
+		<string>AppIcon_Midnight</string>
+		<key>name</key>
+		<string>Midnight Neon</string>
+		<key>image</key>
+		<string>Background_Midnight.jpg</string>
+		<key>actionMenuColor</key>
+		<string>4F0A1224</string>
+		<key>windowColor</key>
+		<string>60040A10</string>
+		<key>blur</key>
+		<integer>30</integer>
+		<key>titleShadow</key>
+		<true/>
+	</dict>
 </array>
 </plist>

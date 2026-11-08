@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "设置";
 "Menu_Restart_SpringBoard_Title" = "重启 SpringBoard";
 "Menu_Reboot_Userspace_Title" = "重启用户空间";
+"Menu_Terminal_Title" = "终端";
 "Menu_Credits_Title" = "关于";
 
 // Updating

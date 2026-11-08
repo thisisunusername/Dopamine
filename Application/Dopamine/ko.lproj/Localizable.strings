@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "설정";
 "Menu_Restart_SpringBoard_Title" = "SpringBoard 재시작";
 "Menu_Reboot_Userspace_Title" = "Userspace 재시작";
+"Menu_Terminal_Title" = "터미널";
 "Menu_Credits_Title" = "크레딧";
 
 // Updating

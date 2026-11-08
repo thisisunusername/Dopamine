@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "الإعدادات";
 "Menu_Restart_SpringBoard_Title" = "إعادة تشغيل واجهة النظام";
 "Menu_Reboot_Userspace_Title" = "إعادة تشغيل Userspace";
+"Menu_Terminal_Title" = "الطرفية";
 "Menu_Credits_Title" = "الاعتمادات";
 
 // Updating

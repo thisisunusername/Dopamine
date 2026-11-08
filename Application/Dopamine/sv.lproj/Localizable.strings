@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "Inställningar";
 "Menu_Restart_SpringBoard_Title" = "Starta om SpringBoard";
 "Menu_Reboot_Userspace_Title" = "Starta om Userspace";
+"Menu_Terminal_Title" = "Terminal";
 "Menu_Credits_Title" = "Om";
 
 // Updating

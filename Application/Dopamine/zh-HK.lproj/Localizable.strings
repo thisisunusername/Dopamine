@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "設置";
 "Menu_Restart_SpringBoard_Title" = "註銷";
 "Menu_Reboot_Userspace_Title" = "用戶空間重啟";
+"Menu_Terminal_Title" = "終端機";
 "Menu_Credits_Title" = "關於";
 
 // Updating

@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "Настройки";
 "Menu_Restart_SpringBoard_Title" = "Перезапустить SpringBoard";
 "Menu_Reboot_Userspace_Title" = "Перезагрузить Userspace";
+"Menu_Terminal_Title" = "Терминал";
 "Menu_Credits_Title" = "Благодарности";
 
 // Updating

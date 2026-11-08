@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "設定";
 "Menu_Restart_SpringBoard_Title" = "SpringBoardを再起動";
 "Menu_Reboot_Userspace_Title" = "Userspaceを再起動";
+"Menu_Terminal_Title" = "ターミナル";
 "Menu_Credits_Title" = "クレジット";
 
 // Updating

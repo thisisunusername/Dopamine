@@ -21,6 +21,7 @@
         self.name = [dictionary objectForKey:@"name"];
         self.icon = [dictionary objectForKey:@"icon"];
         self.key = [dictionary objectForKey:@"key"];
+        self.bootlogoOverlay = [dictionary objectForKey:@"bootlogoOverlay"];
         self.imageName = [dictionary objectForKey:@"image"];
         self.windowColor = [self colorFromHexString:[dictionary objectForKey:@"windowColor"]];
         self.actionMenuColor = [self colorFromHexString:[dictionary objectForKey:@"actionMenuColor"]];
@@ -48,24 +49,26 @@
 - (UIImage *)generateBootLogo
 {
     UIImage *backgroundImage = [self image];
-    CGSize canvasSize = backgroundImage.size;
+    if (!backgroundImage) return nil;
 
-    UIImage *overlayImage = [UIImage imageNamed:@"DopamineLogo"];
+    CGSize canvasSize = backgroundImage.size;
+    // Themes may override the logo drawn in the middle of the boot logo, so a
+    // theme can change the boot screen without touching the bundle resources.
+    NSString *overlayName = self.bootlogoOverlay.length ? self.bootlogoOverlay : @"DopamineLogo";
+    UIImage *overlayImage = [UIImage imageNamed:overlayName];
+    if (!overlayImage) {
+        overlayImage = [UIImage imageNamed:@"DopamineLogo"];
+    }
 
     CGSize overlaySize = CGSizeMake(350, 350);
     CGPoint overlayOrigin = CGPointMake((canvasSize.width - overlaySize.width) / 2.0,
                                         (canvasSize.height - overlaySize.height) / 2.0);
-
     UIGraphicsBeginImageContextWithOptions(canvasSize, NO, backgroundImage.scale);
-
     [backgroundImage drawInRect:CGRectMake(0, 0, canvasSize.width, canvasSize.height)];
-
-    // Render overlay (Dopamine Logo) in center of background for boot logo
+    // Render overlay in center of background for boot logo
     [overlayImage drawInRect:CGRectMake(overlayOrigin.x, overlayOrigin.y, overlaySize.width, overlaySize.height)];
-
     UIImage *finalImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
-
     return finalImage;
 }
 

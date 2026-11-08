@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "Ayarlar";
 "Menu_Restart_SpringBoard_Title" = "Springboard'u Yeniden Başlat";
 "Menu_Reboot_Userspace_Title" = "Userspace'i Yeniden Başlat";
+"Menu_Terminal_Title" = "Uçbirim";
 "Menu_Credits_Title" = "Hakkında";
 
 // Updating

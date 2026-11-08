@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "ตั้งค่า";
 "Menu_Restart_SpringBoard_Title" = "รีสตาร์ท SpringBoard";
 "Menu_Reboot_Userspace_Title" = "รีบูต Userspace";
+"Menu_Terminal_Title" = "เทอร์มินัล";
 "Menu_Credits_Title" = "Credits";
 
 // Updating

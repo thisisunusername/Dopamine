@@ -13,6 +13,7 @@
 "Menu_Settings_Title" = "Indstillinger";
 "Menu_Restart_SpringBoard_Title" = "Genstart SpringBoard";
 "Menu_Reboot_Userspace_Title" = "Genstart Userspace";
+"Menu_Terminal_Title" = "Terminal";
 "Menu_Credits_Title" = "Credits";
 
 // Updating
