@@ -269,11 +269,13 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
     if (next.chars) {
         int copyRows = MIN(rows, _screen.height);
         int copyCols = MIN(cols, _screen.width);
-        for (int y = 0; y < copyRows; y++)
-            for (int x = 0; x < copyCols; x++)
-                next.chars[y * cols + x] = _screen.chars[y * _screen.width + x];
-        next.cursorX = MIN(_screen.cursorX, cols - 1);
-        next.cursorY = MIN(_screen.cursorY, rows - 1);
+        if (_screen.chars && _screen.width > 0) {
+            for (int y = 0; y < copyRows; y++)
+                for (int x = 0; x < copyCols; x++)
+                    next.chars[y * cols + x] = _screen.chars[y * _screen.width + x];
+            next.cursorX = MIN(_screen.cursorX, cols - 1);
+            next.cursorY = MIN(_screen.cursorY, rows - 1);
+        }
         DO_ScreenFree(&_screen);
         _screen = next;
     }
@@ -459,7 +461,7 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
 
 #pragma mark - View controller
 
-@interface DOTerminalViewController ()
+@interface DOTerminalViewController () <UITextViewDelegate>
 @property (nonatomic, strong) DOTerminalView *termView;
 @property (nonatomic, strong) UIView *containerView;
 @property (nonatomic, strong) UILabel *statusLabel;
@@ -806,16 +808,23 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
         int readFD = self.masterFD;
         if (readFD < 0) return;
 
-        uint8_t buffer[8192];
-        ssize_t n = read(readFD, buffer, sizeof(buffer));
+        // Blocks cannot capture C arrays, so the buffer is allocated per read
+        // and handed to the main queue as an object.
+        uint8_t *buffer = malloc(8192);
+        if (!buffer) return;
+        ssize_t n = read(readFD, buffer, 8192);
         if (n > 0) {
+            NSData *chunk = [NSData dataWithBytesNoCopy:buffer length:(NSUInteger)n freeWhenDone:YES];
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self.termView feedBytes:buffer length:(NSUInteger)n];
+                [self.termView feedBytes:(const uint8_t *)chunk.bytes length:chunk.length];
             });
-        } else if (n == 0 || (n < 0 && errno != EAGAIN && errno != EINTR)) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self handleShellExit];
-            });
+        } else {
+            free(buffer);
+            if (n == 0 || (n < 0 && errno != EAGAIN && errno != EINTR)) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self handleShellExit];
+                });
+            }
         }
     });
 
