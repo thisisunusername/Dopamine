@@ -805,8 +805,14 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
     dispatch_source_set_event_handler(source, ^{
         __strong typeof(weakSelf) self = weakSelf;
         if (!self) return;
+        // Read whatever is pending without blocking. The descriptor stays in
+        // blocking mode here on purpose: a blocking read on a pty master always
+        // returns at least one byte, and the source only fires when it is
+        // readable. O_NONBLOCK would be unsafe here because the parent may own
+        // other descriptors that share the same file description table entry.
         int readFD = self.masterFD;
         if (readFD < 0) return;
+        if (self.shellStopped) return;
 
         // Blocks cannot capture C arrays, so the buffer is allocated per read
         // and handed to the main queue as an object.
@@ -838,6 +844,7 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
 - (void)handleShellExit
 {
     if (_shellStopped) return;
+    _shellStopped = YES;
 
     if (_readSource) {
         dispatch_source_cancel(_readSource);
@@ -848,11 +855,18 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
         _masterFD = -1;
     }
 
-    int status = 0;
     if (_childPid > 0) {
-        waitpid(_childPid, &status, WNOHANG);
+        pid_t pid = _childPid;
+        _childPid = 0;
+        int status = 0;
+        // Reap without blocking; the shell is on its way out but might need a
+        // few milliseconds to actually become a zombie.
+        for (int i = 0; i < 20; i++) {
+            pid_t r = waitpid(pid, &status, WNOHANG);
+            if (r == pid || (r < 0 && errno == ECHILD)) break;
+            usleep(20 * 1000);
+        }
     }
-    _childPid = 0;
 
     [self showStatus:@"[shell exited]"];
 }
