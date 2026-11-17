@@ -17,6 +17,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nonatomic) NSArray *actions;
 
 - (instancetype)initWithActions:(NSArray<UIAction*> *)actions delegate:(id<DOActionMenuDelegate>)delegate;
+- (void)refreshEnabledStates;
 - (void)hide;
 
 @end

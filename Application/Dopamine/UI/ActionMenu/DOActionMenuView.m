@@ -69,6 +69,26 @@
 
 }
 
+/**
+ * Re-asks the delegate which rows are enabled, without rebuilding the view.
+ *
+ * The enabled state was only ever computed inside `refreshStack`, which runs once when the menu is
+ * created. Since this view is built in `viewDidLoad` and then lives for the whole session, the
+ * delegate was consulted exactly once: after a successful jailbreak the "Restart SpringBoard",
+ * "Restart Userspace" and "Terminal" rows stayed greyed out until the app was relaunched. Rebuilding
+ * the stack to fix that would also restart its layout animation, so the states are refreshed in
+ * place instead.
+ */
+- (void)refreshEnabledStates
+{
+    NSArray<DOActionMenuButton *> *buttons = self.buttonsView.arrangedSubviews;
+    [self.actions enumerateObjectsUsingBlock:^(UIAction *action, NSUInteger idx, BOOL *stop) {
+        if (idx >= buttons.count) return;
+        DOActionMenuButton *button = buttons[idx];
+        button.enabled = [self.delegate actionMenuActionIsEnabled:action];
+    }];
+}
+
 - (void)hide
 {
     [self setUserInteractionEnabled:NO];

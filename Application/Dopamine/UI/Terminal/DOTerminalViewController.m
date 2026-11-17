@@ -498,10 +498,45 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
     return nil;
 }
 
+/**
+ * Any usable interactive shell, best first.
+ *
+ * zsh is only present once the bootstrap is installed, so requiring it made the terminal useless on
+ * a device that was jailbroken but whose bootstrap had not finished unpacking — it opened and then
+ * said "zsh not found", which reads like a broken app rather than a missing component. basename, sh
+ * and bash are all present on stock iOS, so the terminal always starts and the user can still run
+ * commands; the prompt just is not zsh.
+ */
++ (NSString *)shellPath
+{
+    NSString *zsh = [self zshPath];
+    if (zsh) return zsh;
+
+    NSArray<NSString *> *fallbacks = @[
+        JBROOT_PATH(@"/bin/bash"),
+        @"/var/jb/bin/bash",
+        @"/var/jb/bin/sh",
+        @"/bin/bash",
+        @"/bin/sh",
+    ];
+    for (NSString *path in fallbacks) {
+        if (path.length && [[NSFileManager defaultManager] isExecutableFileAtPath:path]) return path;
+    }
+    return nil;
+}
+
+/** Whether the shell we can offer is the bootstrap zsh, i.e. a "real" jailbreak shell. */
++ (BOOL)hasBootstrapShell
+{
+    return [self zshPath] != nil;
+}
+
 + (BOOL)isAvailable
 {
+    // Not gated on zsh: any shell is enough to open the terminal, and requiring the bootstrap one
+    // greyed the row out on a jailbroken device whose bootstrap had not unpacked yet.
     if (![[DOEnvironmentManager sharedManager] isJailbroken]) return NO;
-    return [self zshPath] != nil;
+    return [self shellPath] != nil;
 }
 
 #pragma mark Lifecycle
@@ -670,10 +705,16 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
 
 - (void)startShell
 {
-    NSString *zshPath = [[self class] zshPath];
-    if (!zshPath) {
-        [self showStatus:@"zsh not found.\n\nJailbreak the device and install the bootstrap first."];
+    NSString *shellPath = [[self class] shellPath];
+    if (!shellPath) {
+        [self showStatus:@"No shell available.\n\nNeither the bootstrap zsh nor the system sh could be found."];
         return;
+    }
+
+    // Tell the user which shell they got, instead of silently pretending it is zsh. The notice is a
+    // status line rather than terminal output because the pty does not exist yet at this point.
+    if (![[self class] hasBootstrapShell]) {
+        [self showStatus:@"System shell (bootstrap zsh not installed)"];
     }
 
     int masterFD = -1;
@@ -714,12 +755,17 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
 
     // Minimal environment. PATH starts with the bootstrap binaries so that
     // everything the bootstrap provides is reachable.
+    //
+    // SHELL has to name the shell actually being spawned: bash and sh both read it, and exporting
+    // /var/jb/bin/zsh while running /bin/sh made child processes try to exec a path that does not
+    // exist ("zsh not found" from inside the terminal, not just on entry).
+    NSString *shellEnv = [NSString stringWithFormat:@"SHELL=%@", shellPath];
     NSArray<NSString *> *envLines = @[
         @"TERM=xterm-256color",
         @"HOME=/var/mobile",
         @"USER=mobile",
         @"LOGNAME=mobile",
-        @"SHELL=/var/jb/bin/zsh",
+        shellEnv,
         @"PATH=/var/jb/usr/bin:/var/jb/usr/sbin:/var/jb/bin:/var/jb/sbin:/usr/bin:/bin:/usr/sbin:/sbin",
         @"LANG=en_US.UTF-8",
     ];
@@ -731,8 +777,13 @@ static void DO_ScreenCSI(DOTermScreen *s, const int *params, int nparams, char f
     }
     envp[envCount] = NULL;
 
-    const char *arg0 = zshPath.UTF8String;
-    const char *argv[] = { arg0, "-l", "-i", NULL };
+    // `-l -i` is a zsh/bash spelling; a POSIX sh rejects -l outright and exits immediately, which
+    // looked like "the terminal opens and closes". Only pass -l when the binary knows it.
+    BOOL isPosixSh = [shellPath hasSuffix:@"/sh"];
+    const char *arg0 = shellPath.UTF8String;
+    const char *argvZsh[] = { arg0, "-l", "-i", NULL };
+    const char *argvSh[]  = { arg0, "-i", NULL };
+    const char **argv = isPosixSh ? argvSh : argvZsh;
 
     posix_spawn_file_actions_t actions;
     posix_spawn_file_actions_init(&actions);

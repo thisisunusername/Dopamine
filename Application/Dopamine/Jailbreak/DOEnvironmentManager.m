@@ -274,17 +274,29 @@ extern char **environ;
     return trollstoreInstallation;
 }
 
+/**
+ * Reads the jailbreak state from the client library.
+ *
+ * This used to be wrapped in `dispatch_once`, which made the answer permanent for the lifetime of
+ * the process: the app is already running when the user taps "Jailbreak", so the cached `NO` from
+ * launch survived the success and every screen kept rendering the pre-jailbreak state until the app
+ * was killed. A theme switch only looked like it fixed it because that rebuilds the UI, and even
+ * then it re-read the same stale cache.
+ *
+ * The value is now refreshed on every call. Re-reading is cheap — it is one message to the client
+ * library — and it is the only way `isJailbroken` can be trusted to mean "right now".
+ */
 - (void)updateJailbreakState
 {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        char *jbVersionC = NULL;
-        _isJailbroken = jbclient_dopamine_is_jailbroken(&jbVersionC);
-        if (jbVersionC) {
-            _jailbrokenVersion = [NSString stringWithUTF8String:jbVersionC];
-            free(jbVersionC);
-        }
-    });
+    char *jbVersionC = NULL;
+    BOOL jailbroken = jbclient_dopamine_is_jailbroken(&jbVersionC);
+    if (jbVersionC) {
+        _jailbrokenVersion = [NSString stringWithUTF8String:jbVersionC];
+        free(jbVersionC);
+    } else if (!jailbroken) {
+        _jailbrokenVersion = nil;
+    }
+    _isJailbroken = jailbroken;
 }
 
 - (BOOL)isJailbroken

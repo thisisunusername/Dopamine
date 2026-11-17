@@ -23,6 +23,8 @@
 @property DOJailbreakButton *jailbreakBtn;
 @property NSArray<NSLayoutConstraint *> *jailbreakButtonConstraints;
 @property DOActionMenuButton *updateButton;
+// Held on to so the rows can be re-enabled when the jailbreak state changes; see viewWillAppear.
+@property DOActionMenuView *actionView;
 @property(nonatomic) BOOL hideStatusBar;
 @property(nonatomic) BOOL hideHomeIndicator;
 
@@ -88,7 +90,7 @@
     ]];
     
     //Action Menu
-    DOActionMenuView *actionView = [[DOActionMenuView alloc] initWithActions:@[
+    DOActionMenuView *actionView = self.actionView = [[DOActionMenuView alloc] initWithActions:@[
         [UIAction actionWithTitle:DOLocalizedString(@"Menu_Settings_Title") image:[UIImage systemImageNamed:@"gearshape" withConfiguration:[DOGlobalAppearance smallIconImageConfiguration]] identifier:@"settings" handler:^(__kindof UIAction * _Nonnull action) {
             [self.navigationController pushViewController:[[DOSettingsController alloc] init] animated:YES];
         }],
@@ -198,6 +200,10 @@
 {
     [super viewWillAppear:animated];
     [self.jailbreakBtn.button setTitle:[self jailbreakButtonTitle] forState:UIControlStateNormal];
+    // Coming back from Settings (or anywhere else) is the moment the jailbreak state may have
+    // changed, and it is the only cheap hook that runs after a jailbreak finishes. Without this the
+    // menu rows kept the enabled state they were given when the view was first built.
+    [self.actionView refreshEnabledStates];
 }
 
 - (void)startJailbreak
